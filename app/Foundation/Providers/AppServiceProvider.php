@@ -12,9 +12,11 @@
 namespace CachetHQ\Cachet\Foundation\Providers;
 
 use AltThree\Bus\Dispatcher;
+use AltThree\Validator\ValidatingMiddleware;
 use CachetHQ\Cachet\Bus\Middleware\UseDatabaseTransactions;
 use CachetHQ\Cachet\Services\Dates\DateFactory;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -34,11 +36,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(Dispatcher $dispatcher)
     {
+        Schema::defaultStringLength(191);
+
         $dispatcher->mapUsing(function ($command) {
             return Dispatcher::simpleMapping($command, 'CachetHQ\Cachet\Bus', 'CachetHQ\Cachet\Bus\Handlers');
         });
 
-        $dispatcher->pipeThrough([UseDatabaseTransactions::class]);
+        $dispatcher->pipeThrough([UseDatabaseTransactions::class, ValidatingMiddleware::class]);
 
         Str::macro('canonicalize', function ($url) {
             return preg_replace('/([^\/])$/', '$1/', $url);
